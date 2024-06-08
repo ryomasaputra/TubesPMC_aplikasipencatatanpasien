@@ -1,100 +1,211 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <time.h>
 
-// Definisikan struktur untuk menyimpan data dari CSV
-typedef struct {
-    int nomor;
-    char nama_lengkap[100];
-    char alamat[100];
-    char kota[50];
-    char tempat_lahir[50];
-    char tanggal_lahir[20];
+typedef struct dataPasien
+{
+    char nama[255];
+    char alamat[255];
+    char kota[255];
+    char tempatLahir[255];
+    int tanggalLahir[3];    // [0] = tanggal, [1] = bulan, [2] = tahun
     int umur;
-    char no_bpjs[30];
-    char id_pasien[20];
-} DataPasien;
+    char noBpjs[255];
+    char idPasien[255];
+    struct dataPasien* next;
+} dataPasien;
 
-int main() {
-    // Nama file CSV dengan path absolut
-    const char *filename = "DataPMC20232024_1.csv";
+typedef struct riwayatDiagnosis
+{
+    int tanggalPeriksa[3];    // [0] = tanggal, [1] = bulan, [2] = tahun
+    char idPasien[255];
+    char diagnosis[255];
+    char tindakan[255];
+    int tanggalKontrol[3];    // [0] = tanggal, [1] = bulan, [2] = tahun
+    int biaya;
+    struct riwayatDiagnosis* next;
+} riwayatDiagnosis;
 
-    // Buka file CSV
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        perror("Gagal membuka file");
-        return EXIT_FAILURE;
+dataPasien *dataPasienHead;
+riwayatDiagnosis *riwayatDiagnosisHead;
+
+void intToStringMonth(int month, char monthOut[255]){
+    if(month == 1){
+        strcpy(monthOut, "Januari");
+    }
+    else if(month == 2){
+        strcpy(monthOut, "Februari");
+    }
+    else if(month == 3){
+        strcpy(monthOut, "Maret");
+    }
+    else if(month == 4){
+        strcpy(monthOut, "April");
+    }
+    else if(month == 5){
+        strcpy(monthOut, "Mei");
+    }
+    else if(month == 6){
+        strcpy(monthOut, "Juni");
+    }
+    else if(month == 7){
+        strcpy(monthOut, "Juli");
+    }
+    else if(month == 8){
+        strcpy(monthOut, "Agustus");
+    }
+    else if(month == 9){
+        strcpy(monthOut, "September");
+    }
+    else if(month == 10){
+        strcpy(monthOut, "Oktober");
+    }
+    else if(month == 11){
+        strcpy(monthOut, "November");
+    }
+    else if(month == 12){
+        strcpy(monthOut, "Desember");
+    }
+}
+
+void readFile1(char fileName[255]){
+    FILE* stream = fopen(fileName, "r");
+    if (stream == NULL){
+        printf("File %s tidak ditemukan", fileName);
+        return;
     }
 
-    // Membaca header dan mengabaikannya
-    char line[512];
-    if (fgets(line, sizeof(line), file) == NULL) {
-        perror("Gagal membaca header file");
-        fclose(file);
-        return EXIT_FAILURE;
-    }
+    char line[255];
+    char tempLine[255];
+    char* token;
+    int i = 0;
 
-    // Membaca data
-    DataPasien data[100]; // Anggap kita hanya memiliki maksimal 100 baris data
-    int index = 0;
-
-    // Membuang kolom "No" pada header
-    char *token = strtok(line, ",");
-    token = strtok(NULL, ","); // Lewati kolom "No"
-
-    // Membaca data
-    int nomor = 1; // Nomor awal
-    while (fgets(line, sizeof(line), file)) {
-        // Hilangkan newline di akhir baris
-        line[strcspn(line, "\n")] = 0;
-
-        // Parse data CSV ke dalam struktur
-        token = strtok(line, ",");
-        strcpy(data[index].nama_lengkap, token);
+    fgets(line, 255, stream);   
+    while(fgets(line, 255, stream)){
+        strcpy(tempLine, line);
+        token = strtok(tempLine, ";");  // skip data nomor
         
-        token = strtok(NULL, ",");
-        strcpy(data[index].alamat, token);
+        // Parsing and adding to linked list dataPasien
+        dataPasien* newPasien = (dataPasien*) malloc(sizeof(dataPasien));
+        token = strtok(NULL, ";");  // nama
+        strcpy(newPasien->nama, token);
+        token = strtok(NULL, ";");  // alamat
+        strcpy(newPasien->alamat, token);
+        token = strtok(NULL, ";");  // kota
+        strcpy(newPasien->kota, token);
+        token = strtok(NULL, ";");  // tempatLahir
+        strcpy(newPasien->tempatLahir, token);
+        token = strtok(NULL, ";");  // tanggalLahir
+        newPasien->tanggalLahir[0] = atoi(token);
+        token = strtok(NULL, ";");  // tanggalLahir
+        newPasien->tanggalLahir[1] = atoi(token);
+        token = strtok(NULL, ";");  // tanggalLahir
+        newPasien->tanggalLahir[2] = atoi(token);
+        token = strtok(NULL, ";");  // umur
+        newPasien->umur = atoi(token);
+        token = strtok(NULL, ";");  // noBpjs
+        strcpy(newPasien->noBpjs, token);
+        token = strtok(NULL, ";");  // idPasien
+        strcpy(newPasien->idPasien, token);
+        
+        newPasien->next = dataPasienHead;
+        dataPasienHead = newPasien;
+    }
+    fclose(stream);
+}
 
-        token = strtok(NULL, ",");
-        strcpy(data[index].kota, token);
-
-        token = strtok(NULL, ",");
-        strcpy(data[index].tempat_lahir, token);
-
-        token = strtok(NULL, ",");
-        strcpy(data[index].tanggal_lahir, token);
-
-        token = strtok(NULL, ",");
-        data[index].umur = atoi(token);
-
-        token = strtok(NULL, ",");
-        strcpy(data[index].no_bpjs, token);
-
-        token = strtok(NULL, ",");
-        strcpy(data[index].id_pasien, token);
-
-        data[index].nomor = nomor++; // Atur nomor
-
-        index++;
+void readFile2(char fileName[255]){
+    FILE* stream = fopen(fileName, "r");
+    if (stream == NULL){
+        printf("File %s tidak ditemukan", fileName);
+        return;
     }
 
-    fclose(file);
+    char line[255];
+    char tempLine[255];
+    char* token;
+    int i = 0;
 
-    // Tampilkan data dalam matriks
-    printf("No | Nama Lengkap | Alamat | Kota | Tempat Lahir | Tanggal Lahir | Umur | No BPJS | ID Pasien\n");
-    printf("----------------------------------------------------------------------------------------------------------\n");
-    for (int i = 0; i < index; i++) {
-        printf("%d | %s | %s | %s | %s | %s | %d | %s | %s\n", data[i].nomor,
-            data[i].nama_lengkap,
-            data[i].alamat,
-            data[i].kota,
-            data[i].tempat_lahir,
-            data[i].tanggal_lahir,
-            data[i].umur,
-            data[i].no_bpjs,
-            data[i].id_pasien);
+    fgets(line, 255, stream);   
+    while(fgets(line, 255, stream)){
+        strcpy(tempLine, line);
+        token = strtok(tempLine, ";");  // skip  data nomor
+
+        // Parsing and adding to linked list riwayatDiagnosis
+        riwayatDiagnosis* newDiagnosis = (riwayatDiagnosis*) malloc(sizeof(riwayatDiagnosis));
+        token = strtok(NULL, ";");  // tanggal periksa
+        newDiagnosis->tanggalPeriksa[0] = atoi(token);
+        token = strtok(NULL, ";");  // tanggal periksa
+        newDiagnosis->tanggalPeriksa[1] = atoi(token);
+        token = strtok(NULL, ";");  // tanggal periksa
+        newDiagnosis->tanggalPeriksa[2] = atoi(token);
+        token = strtok(NULL, ";");  // id pasien
+        strcpy(newDiagnosis->idPasien, token);
+        token = strtok(NULL, ";");  // diagnosis
+        strcpy(newDiagnosis->diagnosis, token);
+        token = strtok(NULL, ";");  // tindakan
+        strcpy(newDiagnosis->tindakan, token);
+        token = strtok(NULL, ";");  // tanggal kontrol
+        newDiagnosis->tanggalKontrol[0] = atoi(token);
+        token = strtok(NULL, ";");  // tanggal kontrol
+        newDiagnosis->tanggalKontrol[1] = atoi(token);
+        token = strtok(NULL, ";");  // tanggal kontrol
+        newDiagnosis->tanggalKontrol[2] = atoi(token);
+        token = strtok(NULL, ";");  // biaya
+        newDiagnosis->biaya = atoi(token);
+        newDiagnosis->next = riwayatDiagnosisHead;
+        riwayatDiagnosisHead = newDiagnosis;
+
     }
+    fclose(stream);
+}
+
+void writeFile1(char filename[255]){
+    FILE* stream = fopen(filename, "w");
+    if (stream == NULL){
+        printf("Error opening file %s for writing", filename);
+        return;
+    }
+    dataPasien* current = dataPasienHead;
+    while (current != NULL){
+        fprintf(stream, "%s;%s;%s;%s;%d;%d;%d;%s;%s\n", current->nama, current->alamat, current->kota, current->tempatLahir, current->tanggalLahir[0], current->tanggalLahir[1], current->tanggalLahir[2], current->noBpjs, current->idPasien);
+        current = current->next;
+    }
+    fclose(stream);
+}
+
+void writeFile2(char filename[255]){
+    FILE* stream = fopen(filename, "w");
+    if (stream == NULL){
+        printf("Error opening file %s for writing", filename);
+        return;
+    }
+    riwayatDiagnosis* current = riwayatDiagnosisHead;
+    while (current != NULL){
+        fprintf(stream, "%d;%s;%s;%d;%d\n", current->tanggalPeriksa[0], current->tanggalPeriksa[1], current->tanggalPeriksa[2], current->idPasien, current->diagnosis, current->tindakan, current->tanggalKontrol[0], current->tanggalKontrol[1], current->tanggalKontrol[2], current->biaya);
+        current = current->next;
+    }
+    fclose(stream);
+}
+
+void writeFile(){
+    writeFile1("tes1.csv");
+    writeFile2("tes2.csv");
+}
+
+int main(){    
+    // Allocating memory for dataPasienHead and riwayatDiagnosisHead
+    dataPasienHead = (dataPasien*) malloc(sizeof(dataPasien));
+    riwayatDiagnosisHead = (riwayatDiagnosis*) malloc(sizeof(riwayatDiagnosis));
+
+    // Reading CSV files
+    readFile1("DataPasien.csv");
+    readFile2("RiwayatDiagnosis.csv");
+
+    // Writing combined data to CSV files
+    writeFile();
 
     return 0;
 }
-
