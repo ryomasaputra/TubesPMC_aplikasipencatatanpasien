@@ -1,5 +1,5 @@
-// #include <gtk/gtk.h>
-#include <C:/msys64/mingw64/include/gtk-3.0/gtk/gtk.h>
+#include <gtk/gtk.h>
+//#include <C:/msys64/mingw64/include/gtk-3.0/gtk/gtk.h>
 
 static void print_hello(GtkWidget *widget, gpointer data) { g_print("Hello World\n"); }
 
